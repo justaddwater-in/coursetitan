@@ -1,0 +1,131 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursetitan/generator
+
+    CourseTitan generator page: source form, live progress, result.
+
+    Data attributes required for JS:
+    * data-region="coursetitan" and the data-region / data-step hooks below.
+
+    Context variables required for this template:
+    * configured - bool
+    * issiteadmin - bool
+    * settingsurl - string
+    * categories - array of {id, name, selected}
+    * accept - string, file input accept list
+    * extensions - string, human-readable list
+    * model - string
+    * visible - bool, whether new courses are visible
+
+    Example context (json):
+    {
+        "configured": true, "issiteadmin": true, "settingsurl": "#",
+        "categories": [{"id": 1, "name": "Miscellaneous", "selected": true}],
+        "accept": ".txt,.pdf", "extensions": "txt, pdf", "model": "claude-sonnet-5-5", "visible": false
+    }
+}}
+<div data-region="coursetitan">
+    {{^configured}}
+        <div class="alert alert-warning">
+            {{#str}} notconfigured, local_coursetitan {{/str}}
+            {{#issiteadmin}} <a href="{{settingsurl}}">{{#str}} settings, local_coursetitan {{/str}}</a>{{/issiteadmin}}
+        </div>
+    {{/configured}}
+
+    <p class="text-muted">{{#str}} intro, local_coursetitan {{/str}}</p>
+
+    <div class="row">
+        <div class="col-lg-7 mb-3">
+            <form data-region="form" class="card" novalidate>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="coursetitan-category" class="form-label fw-bold font-weight-bold">{{#str}} category, local_coursetitan {{/str}}</label>
+                        <select id="coursetitan-category" name="category" class="form-select custom-select">
+                            {{#categories}}
+                                <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                            {{/categories}}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="coursetitan-text" class="form-label fw-bold font-weight-bold">{{#str}} sourcetext, local_coursetitan {{/str}}</label>
+                        <textarea id="coursetitan-text" name="text" rows="12" class="form-control"
+                                  placeholder="{{#str}} sourcetext_placeholder, local_coursetitan {{/str}}"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="coursetitan-files" class="form-label fw-bold font-weight-bold">{{#str}} sourcefiles, local_coursetitan {{/str}}</label>
+                        <input id="coursetitan-files" name="sources[]" type="file" class="form-control" multiple accept="{{accept}}">
+                        <div class="form-text text-muted small">{{#str}} sourcefiles_help, local_coursetitan, {{extensions}} {{/str}}</div>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center">
+                        <button type="submit" class="btn btn-primary" data-action="generate" {{^configured}}disabled{{/configured}}>
+                            {{#str}} generate, local_coursetitan {{/str}}
+                        </button>
+                        <span class="small text-muted ms-3 ml-3">
+                            {{#str}} usingmodel, local_coursetitan, {{model}} {{/str}}
+                            {{^visible}} · {{#str}} createdhidden, local_coursetitan {{/str}}{{/visible}}
+                        </span>
+                    </div>
+                    <div class="alert alert-danger mt-3 mb-0 d-none" role="alert" data-region="formerror"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card mb-3 d-none" data-region="progress">
+                <div class="card-header fw-bold font-weight-bold">{{#str}} progress, local_coursetitan {{/str}}</div>
+                <ol class="list-group list-group-flush">
+                    <li class="list-group-item" data-step="outline">
+                        <div class="d-flex justify-content-between">
+                            <span><span data-region="icon" class="me-2">○</span>{{#str}} step_outline, local_coursetitan {{/str}}</span>
+                            <span class="small text-muted" data-region="detail"></span>
+                        </div>
+                    </li>
+                    <li class="list-group-item" data-step="content">
+                        <div class="d-flex justify-content-between">
+                            <span><span data-region="icon" class="me-2">○</span>{{#str}} step_content, local_coursetitan {{/str}}</span>
+                            <span class="small text-muted" data-region="detail"></span>
+                        </div>
+                        <div class="progress mt-2 d-none" style="height: 6px;" data-region="bar">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="small text-muted text-truncate mt-1" data-region="current"></div>
+                    </li>
+                    <li class="list-group-item" data-step="build">
+                        <div class="d-flex justify-content-between">
+                            <span><span data-region="icon" class="me-2">○</span>{{#str}} step_build, local_coursetitan {{/str}}</span>
+                            <span class="small text-muted" data-region="detail"></span>
+                        </div>
+                    </li>
+                </ol>
+                <div class="card-footer small text-muted" data-region="elapsed"></div>
+            </div>
+
+            <div class="card border-success mb-3 d-none" data-region="result">
+                <div class="card-body">
+                    <h4 class="h5 card-title" data-region="title"></h4>
+                    <p class="small text-muted mb-2" data-region="summary"></p>
+                    <ul class="small text-warning ps-3 d-none" data-region="warnings"></ul>
+                    <p class="small mb-3">{{#str}} reviewbeforepublishing, local_coursetitan {{/str}}</p>
+                    <a href="#" class="btn btn-success" data-region="open">{{#str}} opencourse, local_coursetitan {{/str}}</a>
+                </div>
+            </div>
+
+            <div class="alert alert-danger d-none" role="alert" data-region="error"></div>
+        </div>
+    </div>
+</div>

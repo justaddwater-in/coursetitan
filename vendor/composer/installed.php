@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'name' => 'justaddwater/moodle-local_coursetitan',
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '8c05f2593b46092787f3c7bf32d148ebbe9cefc4',
+        'type' => 'moodle-plugin',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'dev' => true,
+    ),
+    'versions' => array(
+        'justaddwater/moodle-local_coursetitan' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '8c05f2593b46092787f3c7bf32d148ebbe9cefc4',
+            'type' => 'moodle-plugin',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'smalot/pdfparser' => array(
+            'pretty_version' => 'v2.12.5',
+            'version' => '2.12.5.0',
+            'reference' => '2cfa0d92bd557875c9f52a75fde0e8392302a354',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../smalot/pdfparser',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'symfony/polyfill-mbstring' => array(
+            'pretty_version' => '1.x-dev',
+            'version' => '1.9999999.9999999.9999999-dev',
+            'reference' => 'd3d318bad5e7a1bfbd026009c8bfb8d8f99ae6b6',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/polyfill-mbstring',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+    ),
+);

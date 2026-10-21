@@ -1,0 +1,64 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_coursetitan/diagnostics
+
+    Provider connectivity check.
+
+    Context variables required for this template:
+    * rows - array of {label, model, active, configured, tested, ok, message, ms}
+    * actionurl - string
+    * sesskey - string
+
+    Example context (json):
+    {
+        "rows": [{"label": "OpenAI", "model": "gpt-5-mini", "active": true, "configured": true,
+                  "tested": true, "ok": true, "message": "Working", "ms": 812}],
+        "actionurl": "#", "sesskey": "abc"
+    }
+}}
+<p>{{#str}} diag_intro, local_coursetitan {{/str}}</p>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>{{#str}} diag_provider, local_coursetitan {{/str}}</th>
+            <th>{{#str}} diag_model, local_coursetitan {{/str}}</th>
+            <th>{{#str}} diag_result, local_coursetitan {{/str}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#rows}}
+            <tr>
+                <td>{{label}} {{#active}}<span class="badge bg-primary badge-primary">{{#str}} diag_active, local_coursetitan {{/str}}</span>{{/active}}</td>
+                <td><code>{{model}}</code></td>
+                <td>
+                    {{^configured}}<span class="text-muted">{{#str}} diag_nokey, local_coursetitan {{/str}}</span>{{/configured}}
+                    {{#tested}}
+                        {{#ok}}<span class="badge bg-success badge-success">OK</span>{{/ok}}
+                        {{^ok}}<span class="badge bg-danger badge-danger">{{#str}} error {{/str}}</span>{{/ok}}
+                        {{message}} <span class="text-muted small">({{ms}} ms)</span>
+                    {{/tested}}
+                </td>
+            </tr>
+        {{/rows}}
+    </tbody>
+</table>
+<form method="post" action="{{actionurl}}">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <input type="hidden" name="run" value="1">
+    <button type="submit" class="btn btn-primary" data-action="run-diagnostics">{{#str}} diag_run, local_coursetitan {{/str}}</button>
+</form>

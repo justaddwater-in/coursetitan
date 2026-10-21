@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>vendor/smalot/pdfparser</location>
+    <name>PdfParser</name>
+    <description>Pure-PHP PDF text extraction, used to read uploaded PDF source material.</description>
+    <license>LGPL</license>
+    <licenseversion>3.0</licenseversion>
+    <version>2.12.5</version>
+    <repository>https://github.com/smalot/pdfparser</repository>
+    <copyrights>
+      <copyright>Sebastien Malot</copyright>
+    </copyrights>
+  </library>
+  <library>
+    <location>vendor/symfony/polyfill-mbstring</location>
+    <name>Symfony Polyfill mbstring</name>
+    <description>Dependency of PdfParser.</description>
+    <license>MIT</license>
+    <version>1.x</version>
+    <repository>https://github.com/symfony/polyfill-mbstring</repository>
+    <copyrights>
+      <copyright>Fabien Potencier</copyright>
+    </copyrights>
+  </library>
+</libraries>
