@@ -39,65 +39,100 @@
         "accept": ".txt,.pdf", "extensions": "txt, pdf", "model": "claude-sonnet-5-5", "visible": false
     }
 }}
-<div data-region="coursetitan">
+<div data-region="coursetitan" class="coursetitan-generator">
     {{^configured}}
-        <div class="alert alert-warning">
+        <div class="alert alert-warning" role="alert">
             {{#str}} notconfigured, local_coursetitan {{/str}}
             {{#issiteadmin}} <a href="{{settingsurl}}">{{#str}} settings, local_coursetitan {{/str}}</a>{{/issiteadmin}}
         </div>
     {{/configured}}
 
-    <p class="text-muted">{{#str}} intro, local_coursetitan {{/str}}</p>
+    <div class="row g-4">
+        <div class="col-xl-8 col-lg-7 mb-3">
+            <form data-region="form" class="card shadow-sm border-0" novalidate>
+                <div class="card-header bg-white border-bottom py-3">
+                    <h3 class="h5 mb-1">{{#str}} source_material_heading, local_coursetitan {{/str}}</h3>
+                    <p class="small text-muted mb-0">{{#str}} source_material_subheading, local_coursetitan {{/str}}</p>
+                </div>
+                <div class="card-body p-3 p-md-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="coursetitan-category" class="form-label font-weight-bold">{{#str}} category, local_coursetitan {{/str}}</label>
+                            <select id="coursetitan-category" name="category" class="form-select custom-select">
+                                {{#categories}}
+                                    <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                                {{/categories}}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="coursetitan-provider" class="form-label font-weight-bold">{{#str}} generation_provider, local_coursetitan {{/str}}</label>
+                            <select id="coursetitan-provider" name="provider" class="form-select custom-select" data-region="providerselect" {{^configured}}disabled{{/configured}}>
+                                {{#providers}}
+                                    <option value="{{id}}" data-model="{{model}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                                {{/providers}}
+                            </select>
+                            <div class="form-text" data-region="providermodel" data-template="{{#str}} selected_model, local_coursetitan, __MODEL__ {{/str}}">{{#str}} selected_model, local_coursetitan, {{model}} {{/str}}</div>
+                        </div>
+                    </div>
 
-    <div class="row">
-        <div class="col-lg-7 mb-3">
-            <form data-region="form" class="card" novalidate>
-                <div class="card-body">
                     <div class="mb-3">
-                        <label for="coursetitan-category" class="form-label fw-bold font-weight-bold">{{#str}} category, local_coursetitan {{/str}}</label>
-                        <select id="coursetitan-category" name="category" class="form-select custom-select">
-                            {{#categories}}
-                                <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
-                            {{/categories}}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="coursetitan-text" class="form-label fw-bold font-weight-bold">{{#str}} sourcetext, local_coursetitan {{/str}}</label>
-                        <textarea id="coursetitan-text" name="text" rows="12" class="form-control"
+                        <label for="coursetitan-text" class="form-label font-weight-bold">{{#str}} sourcetext, local_coursetitan {{/str}}</label>
+                        <textarea id="coursetitan-text" name="text" rows="10" class="form-control"
                                   placeholder="{{#str}} sourcetext_placeholder, local_coursetitan {{/str}}"></textarea>
+                        <div class="form-text">{{#str}} sourcetext_hint, local_coursetitan {{/str}}</div>
                     </div>
-                    <div class="mb-3">
-                        <label for="coursetitan-files" class="form-label fw-bold font-weight-bold">{{#str}} sourcefiles, local_coursetitan {{/str}}</label>
+
+                    <div class="mb-4">
+                        <label for="coursetitan-files" class="form-label font-weight-bold">{{#str}} sourcefiles, local_coursetitan {{/str}}</label>
                         <input id="coursetitan-files" name="sources[]" type="file" class="form-control" multiple accept="{{accept}}">
-                        <div class="form-text text-muted small">{{#str}} sourcefiles_help, local_coursetitan, {{extensions}} {{/str}}</div>
+                        <div class="form-text">{{#str}} sourcefiles_help, local_coursetitan, {{extensions}} {{/str}}</div>
                     </div>
-                    <div class="d-flex flex-wrap align-items-center">
-                        <button type="submit" class="btn btn-primary" data-action="generate" {{^configured}}disabled{{/configured}}>
-                            {{#str}} generate, local_coursetitan {{/str}}
+
+                    <div class="d-flex flex-wrap align-items-center justify-content-between border-top pt-3">
+                        <div class="small text-muted mb-2 mb-md-0">
+                            {{^visible}}<span class="fa fa-eye-slash mr-1" aria-hidden="true"></span>{{#str}} createdhidden, local_coursetitan {{/str}}{{/visible}}
+                            {{#visible}}{{#str}} createdvisible, local_coursetitan {{/str}}{{/visible}}
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg px-4" data-action="generate" {{^configured}}disabled{{/configured}}>
+                            <span data-region="generatelabel">{{#str}} generate, local_coursetitan {{/str}}</span>
                         </button>
-                        <span class="small text-muted ms-3 ml-3">
-                            {{#str}} usingmodel, local_coursetitan, {{model}} {{/str}}
-                            {{^visible}} · {{#str}} createdhidden, local_coursetitan {{/str}}{{/visible}}
-                        </span>
                     </div>
                     <div class="alert alert-danger mt-3 mb-0 d-none" role="alert" data-region="formerror"></div>
                 </div>
             </form>
         </div>
 
-        <div class="col-lg-5">
-            <div class="card mb-3 d-none" data-region="progress">
-                <div class="card-header fw-bold font-weight-bold">{{#str}} progress, local_coursetitan {{/str}}</div>
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm border-0 mb-3" data-region="gettingstarted">
+                <div class="card-body p-3 p-md-4">
+                    <h3 class="h5 mb-3">{{#str}} whatyoullcreate, local_coursetitan {{/str}}</h3>
+                    <div class="d-flex mb-3">
+                        <div class="mr-3 text-primary font-weight-bold">01</div>
+                        <div><div class="font-weight-bold">{{#str}} output_outline, local_coursetitan {{/str}}</div><div class="small text-muted">{{#str}} output_outline_desc, local_coursetitan {{/str}}</div></div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <div class="mr-3 text-primary font-weight-bold">02</div>
+                        <div><div class="font-weight-bold">{{#str}} output_lessons, local_coursetitan {{/str}}</div><div class="small text-muted">{{#str}} output_lessons_desc, local_coursetitan {{/str}}</div></div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="mr-3 text-primary font-weight-bold">03</div>
+                        <div><div class="font-weight-bold">{{#str}} output_assessments, local_coursetitan {{/str}}</div><div class="small text-muted">{{#str}} output_assessments_desc, local_coursetitan {{/str}}</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 mb-3 d-none" data-region="progress">
+                <div class="card-header bg-white font-weight-bold">{{#str}} progress, local_coursetitan {{/str}}</div>
                 <ol class="list-group list-group-flush">
                     <li class="list-group-item" data-step="outline">
                         <div class="d-flex justify-content-between">
-                            <span><span data-region="icon" class="me-2">○</span>{{#str}} step_outline, local_coursetitan {{/str}}</span>
+                            <span><span data-region="icon" class="mr-2">○</span>{{#str}} step_outline, local_coursetitan {{/str}}</span>
                             <span class="small text-muted" data-region="detail"></span>
                         </div>
                     </li>
                     <li class="list-group-item" data-step="content">
                         <div class="d-flex justify-content-between">
-                            <span><span data-region="icon" class="me-2">○</span>{{#str}} step_content, local_coursetitan {{/str}}</span>
+                            <span><span data-region="icon" class="mr-2">○</span>{{#str}} step_content, local_coursetitan {{/str}}</span>
                             <span class="small text-muted" data-region="detail"></span>
                         </div>
                         <div class="progress mt-2 d-none" style="height: 6px;" data-region="bar">
@@ -107,7 +142,7 @@
                     </li>
                     <li class="list-group-item" data-step="build">
                         <div class="d-flex justify-content-between">
-                            <span><span data-region="icon" class="me-2">○</span>{{#str}} step_build, local_coursetitan {{/str}}</span>
+                            <span><span data-region="icon" class="mr-2">○</span>{{#str}} step_build, local_coursetitan {{/str}}</span>
                             <span class="small text-muted" data-region="detail"></span>
                         </div>
                     </li>
@@ -115,11 +150,11 @@
                 <div class="card-footer small text-muted" data-region="elapsed"></div>
             </div>
 
-            <div class="card border-success mb-3 d-none" data-region="result">
+            <div class="card border-success shadow-sm mb-3 d-none" data-region="result">
                 <div class="card-body">
                     <h4 class="h5 card-title" data-region="title"></h4>
                     <p class="small text-muted mb-2" data-region="summary"></p>
-                    <ul class="small text-warning ps-3 d-none" data-region="warnings"></ul>
+                    <ul class="small text-warning pl-3 d-none" data-region="warnings"></ul>
                     <p class="small mb-3">{{#str}} reviewbeforepublishing, local_coursetitan {{/str}}</p>
                     <a href="#" class="btn btn-success" data-region="open">{{#str}} opencourse, local_coursetitan {{/str}}</a>
                 </div>

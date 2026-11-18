@@ -1,6 +1,6 @@
 {
     "name": "justaddwater/moodle-local_coursetitan",
-    "description": "CourseTitan: AI course generation for Moodle using OpenAI or Anthropic Claude.",
+    "description": "CourseTitan: AI course generation for Moodle using OpenAI, Anthropic Claude or Google Gemini.",
     "type": "moodle-local",
     "license": "GPL-3.0-or-later",
     "require": {

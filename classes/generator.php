@@ -192,7 +192,8 @@ class generator {
             ? "\n\nStanding instructions from the site administrator (follow them):\n" . $this->admininstructions
             : '';
         return <<<PROMPT
-You are an expert instructional designer who builds Moodle courses from a teacher's source material.
+You are an expert instructional designer who creates structured courses from a teacher's source material.
+Do not mention the underlying platform or course-building software in learner-facing content unless the source material explicitly discusses those topics.
 
 Rules:
 - Base all content on the source material. You may add widely accepted background knowledge to explain it, but never invent statistics, quotes, names or references.

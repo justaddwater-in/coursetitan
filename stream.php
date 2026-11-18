@@ -39,6 +39,7 @@ require_login(null, false);
 require_sesskey();
 
 $categoryid = required_param('category', PARAM_INT);
+$requestedprovider = optional_param('provider', '', PARAM_ALPHA);
 $text = trim(optional_param('text', '', PARAM_RAW));
 $catcontext = context_coursecat::instance($categoryid);
 require_capability('local/coursetitan:generate', $catcontext);
@@ -62,10 +63,20 @@ if ($files && is_array($files['tmp_name'])) {
 $source = implode("\n\n", $parts);
 
 $stream = new event_stream();
-$provider = factory::create();
+if ($requestedprovider !== '') {
+    if (!array_key_exists($requestedprovider, factory::get_choices())) {
+        $stream->error(get_string('invalidprovider', 'local_coursetitan'));
+        die;
+    }
+    $provider = factory::create($requestedprovider);
+} else {
+    // Backward compatibility for requests from older cached pages.
+    $provider = factory::create();
+}
+
 
 if (!$provider->is_configured()) {
-    $stream->error(get_string('notconfigured', 'local_coursetitan'));
+    $stream->error(get_string('providerunavailable', 'local_coursetitan'));
     die;
 }
 if ($source === '') {
@@ -110,5 +121,8 @@ try {
     ]);
 } catch (\Throwable $e) {
     debugging('local_coursetitan: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), DEBUG_DEVELOPER);
-    $stream->error($e->getMessage());
+    $message = $e instanceof \moodle_exception
+        ? $e->getMessage()
+        : get_string('generation_unexpected_error', 'local_coursetitan');
+    $stream->error($message);
 }

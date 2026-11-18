@@ -30,6 +30,9 @@ class factory {
     /** @var string Default Claude model (admins can change it in settings). */
     const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5-5';
 
+    /** @var string Default Gemini model with structured output support. */
+    const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+
     /**
      * Provider choices for the settings drop-down.
      *
@@ -39,13 +42,14 @@ class factory {
         return [
             'openai' => get_string('provider_openai', 'local_coursetitan'),
             'anthropic' => get_string('provider_anthropic', 'local_coursetitan'),
+            'gemini' => get_string('provider_gemini', 'local_coursetitan'),
         ];
     }
 
     /**
      * Instantiate the active provider (or a named one).
      *
-     * @param string|null $name 'openai' | 'anthropic'; null = the configured active provider.
+     * @param string|null $name 'openai' | 'anthropic' | 'gemini'; null = the configured active provider.
      * @return base
      */
     public static function create(?string $name = null): base {
@@ -55,6 +59,9 @@ class factory {
         $maxtokens = (int) ($cfg->maxtokens ?? 16000) ?: 16000;
 
         switch ($name) {
+            case 'gemini':
+                return new gemini((string) ($cfg->geminikey ?? ''),
+                    (string) (($cfg->geminimodel ?? '') ?: self::DEFAULT_GEMINI_MODEL), $timeout, $maxtokens);
             case 'anthropic':
                 return new anthropic((string) ($cfg->anthropickey ?? ''),
                     (string) (($cfg->anthropicmodel ?? '') ?: self::DEFAULT_ANTHROPIC_MODEL), $timeout, $maxtokens);

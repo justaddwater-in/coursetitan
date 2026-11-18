@@ -120,7 +120,7 @@ abstract class base {
     protected function post_json(string $url, array $headers, array $body): array {
         $payload = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($payload === false) {
-            throw new provider_exception('Could not encode request: ' . json_last_error_msg());
+            throw new provider_exception(\get_string('provider_request_encode_failed', 'local_coursetitan', json_last_error_msg()));
         }
         $headers[] = 'Content-Type: application/json';
 
@@ -136,20 +136,31 @@ abstract class base {
             }
 
             if ($errno === -1) {
-                throw new provider_exception("Moodle blocked the request to {$url}: {$error} Check Site administration > "
-                    . 'General > Security > HTTP security (cURL blocked hosts / allowed ports) and DNS on the server.');
+                throw new provider_exception(\get_string('provider_request_blocked', 'local_coursetitan', (object) [
+                    'url' => $url,
+                    'error' => $error,
+                ]));
             }
             if ($errno !== 0) {
-                throw new provider_exception("Network error calling {$this->get_name()} (cURL {$errno}): {$error}");
+                throw new provider_exception(\get_string('provider_network_error', 'local_coursetitan', (object) [
+                    'provider' => \get_string('provider_' . $this->get_name(), 'local_coursetitan'),
+                    'code' => $errno,
+                    'error' => $error,
+                ]));
             }
 
             $decoded = json_decode((string) $raw, true);
             if ($status < 200 || $status >= 300) {
                 $message = $this->extract_error_message($decoded) ?? substr(strip_tags((string) $raw), 0, 300);
-                throw new provider_exception("{$this->get_name()} returned HTTP {$status}: {$message}", $status);
+                throw new provider_exception(\get_string('provider_http_error', 'local_coursetitan', (object) [
+                    'provider' => \get_string('provider_' . $this->get_name(), 'local_coursetitan'),
+                    'status' => $status,
+                    'message' => $message,
+                ]), $status);
             }
             if (!is_array($decoded)) {
-                throw new provider_exception("{$this->get_name()} returned a non-JSON response.");
+                throw new provider_exception(\get_string('provider_non_json_response', 'local_coursetitan',
+                    \get_string('provider_' . $this->get_name(), 'local_coursetitan')));
             }
             return $decoded;
         }
@@ -245,7 +256,7 @@ abstract class base {
         }
         $data = json_decode($text, true);
         if (!is_array($data)) {
-            throw new provider_exception('Model output was not valid JSON: ' . json_last_error_msg(), 0, $text);
+            throw new provider_exception(\get_string('provider_invalid_json', 'local_coursetitan', json_last_error_msg()), 0, $text);
         }
         return $data;
     }

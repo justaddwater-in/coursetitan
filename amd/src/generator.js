@@ -43,11 +43,48 @@ define(['core/str'], function(Str) {
         this.config = config;
         this.form = root.querySelector('[data-region="form"]');
         this.button = root.querySelector('[data-action="generate"]');
+        this.providerselect = this.region('providerselect');
+        this.providermodel = this.region('providermodel');
+        this.placeIntroBelowHeading();
+        if (this.providerselect) {
+            this.providerselect.addEventListener('change', this.updateProviderModel.bind(this));
+            this.updateProviderModel();
+        }
         this.timer = null;
         this.finished = false;
         this.strings = {};
         this.form.addEventListener('submit', this.submit.bind(this));
     }
+
+
+
+    /**
+     * Place the introduction between the page heading and secondary navigation.
+     *
+     * Moodle renders secondary navigation before plugin page content, so move
+     * the existing accessible introduction into the page header after rendering.
+     */
+    Generator.prototype.placeIntroBelowHeading = function() {
+        var intro = this.region('intro');
+        var secondaryNavigation = document.querySelector('.secondary-navigation');
+        if (!intro || !secondaryNavigation || !secondaryNavigation.parentNode) {
+            return;
+        }
+        secondaryNavigation.parentNode.insertBefore(intro, secondaryNavigation);
+        intro.classList.add('mt-2', 'mb-3');
+    };
+
+    /**
+     * Keep the selected model visible when the teacher changes provider.
+     */
+    Generator.prototype.updateProviderModel = function() {
+        if (!this.providerselect || !this.providermodel) {
+            return;
+        }
+        var option = this.providerselect.options[this.providerselect.selectedIndex];
+        this.providermodel.textContent = option && option.dataset.model ?
+            this.providermodel.dataset.template.replace('__MODEL__', option.dataset.model) : '';
+    };
 
     /**
      * Find an element by data-region inside an optional parent.
@@ -95,7 +132,8 @@ define(['core/str'], function(Str) {
      * @returns {Promise}
      */
     Generator.prototype.loadStrings = function() {
-        var keys = ['js_nosource', 'js_connectionlost', 'js_elapsed', 'js_tokens', 'js_summary', 'js_skipped'];
+        var keys = ['js_nosource', 'js_connectionlost', 'js_elapsed', 'js_tokens', 'js_summary', 'js_skipped',
+            'js_http_error', 'js_request_failed'];
         var self = this;
         return Str.get_strings(keys.map(function(k) {
             return {key: k, component: 'local_coursetitan'};
@@ -156,6 +194,7 @@ define(['core/str'], function(Str) {
         var self = this;
         this.finished = false;
         this.button.disabled = true;
+        this.toggle(this.region('gettingstarted'), false);
         this.toggle(this.region('progress'), true);
         this.toggle(this.region('result'), false);
         this.toggle(this.region('error'), false);
@@ -176,7 +215,7 @@ define(['core/str'], function(Str) {
         fetch(this.config.streamUrl, {method: 'POST', body: data, credentials: 'same-origin'})
             .then(function(response) {
                 if (!response.ok || !response.body) {
-                    throw new Error('HTTP ' + response.status);
+                    throw new Error(self.str('js_http_error', {status: response.status}));
                 }
                 return self.read(response.body.getReader());
             })
@@ -187,7 +226,7 @@ define(['core/str'], function(Str) {
                 return null;
             })
             .catch(function(err) {
-                self.fail(String(err && err.message ? err.message : err));
+                self.fail(err && err.message ? err.message : self.strings.js_request_failed);
             });
     };
 
@@ -303,6 +342,12 @@ define(['core/str'], function(Str) {
         this.finished = true;
         clearInterval(this.timer);
         this.button.disabled = false;
+
+        // The final event confirms that course creation succeeded. Reconcile the
+        // build step here as a safeguard if its stage_done event was not rendered.
+        this.setStep('build', 'done');
+        this.toggle(this.region('bar'), false);
+        this.region('current').textContent = '';
 
         this.region('title').textContent = ev.title;
         this.region('open').href = ev.url;

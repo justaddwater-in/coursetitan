@@ -52,6 +52,9 @@ if ($hassiteconfig) {
     $settings->add(new admin_setting_configpasswordunmask($p . 'anthropickey', $s('anthropickey'), $s('anthropickey_desc'), ''));
     $settings->add(new admin_setting_configtext($p . 'anthropicmodel', $s('anthropicmodel'), $s('anthropicmodel_desc'),
         factory::DEFAULT_ANTHROPIC_MODEL, PARAM_NOTAGS));
+    $settings->add(new admin_setting_configpasswordunmask($p . 'geminikey', $s('geminikey'), $s('geminikey_desc'), ''));
+    $settings->add(new admin_setting_configtext($p . 'geminimodel', $s('geminimodel'), $s('geminimodel_desc'),
+        factory::DEFAULT_GEMINI_MODEL, PARAM_NOTAGS));
 
     // Course defaults.
     $settings->add(new admin_setting_heading($p . 'h_course', $s('heading_course'), ''));

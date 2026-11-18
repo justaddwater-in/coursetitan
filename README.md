@@ -1,17 +1,17 @@
 # CourseTitan: AI Course Generator for Moodle
 
-**AI course generator for Moodle. Bring your own OpenAI or Claude key, no middleman.**
+**AI course generator for Moodle. Bring your own OpenAI, Claude or Gemini key, no middleman.**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Moodle 4.2+](https://img.shields.io/badge/Moodle-4.2%2B-f98012.svg)](https://moodle.org)
 [![PHP 8.0+](https://img.shields.io/badge/PHP-8.0%2B-777bb4.svg)](https://www.php.net)
-[![AI: OpenAI | Claude](https://img.shields.io/badge/AI-OpenAI%20%7C%20Claude-black.svg)](#supported-ai-providers)
+[![AI: OpenAI | Claude | Gemini](https://img.shields.io/badge/AI-OpenAI%20%7C%20Claude%20%7C%20Gemini-black.svg)](#supported-ai-providers)
 
 CourseTitan is a free, open-source **Moodle plugin that creates complete courses with AI**.
 Paste lecture notes or upload a syllabus, Word document, PowerPoint deck or PDF, and CourseTitan
 builds a ready-to-review Moodle course with sections, lesson pages, quizzes and discussion forums.
 
-It connects **directly to OpenAI (GPT models) or Anthropic Claude** with your own API key.
+It connects **directly to OpenAI (GPT models), Anthropic Claude or Google Gemini** with your own API key.
 There is no third-party service in between, no subscription and no per-course fee. You pay only
 for the AI tokens you use, and your teaching material goes straight from your Moodle server to
 the AI provider you choose.
@@ -44,7 +44,7 @@ content through their own servers and charge per course or per seat.
 CourseTitan takes a different approach:
 
 - **No vendor lock-in.** Your API key, your provider, your Moodle server.
-- **No middleman.** Requests go directly to OpenAI or Anthropic.
+- **No middleman.** Requests go directly to OpenAI, Anthropic or Google.
 - **Real Moodle activities.** Courses are built with Moodle's own APIs, not imported as a
   backup file, so everything is editable like any course you made yourself.
 - **Safe by default.** New courses are hidden from students until a teacher reviews them.
@@ -82,7 +82,8 @@ CourseTitan uses a two-stage pipeline that mirrors how an instructional designer
    forums and quizzes, and saves quiz questions to the question bank.
 
 Every response is constrained by a fixed JSON Schema (see `classes/schema.php`), enforced natively
-by the AI provider: OpenAI Structured Outputs and Claude structured outputs. A validator
+by the AI provider: OpenAI Structured Outputs, Claude structured outputs and Gemini structured output. A
+validator
 (`classes/validator.php`) then checks the rules a schema cannot express, such as exactly one
 correct answer per question, a minimum number of questions and real page content.
 
@@ -92,16 +93,17 @@ correct answer per question, a minimum number of questions and real page content
 |----------|---------------|-------|
 | **OpenAI** | `gpt-5-mini` | Any model that supports Structured Outputs (`json_schema`) |
 | **Anthropic Claude** | `claude-sonnet-5-5` | Any Claude model that supports structured outputs |
+| **Google Gemini** | `gemini-3.8-flash` | Gemini models that support structured output |
 
-You can store keys for both providers and switch between them in one setting. Model names are
+You can store keys for all providers and switch between them in one setting. Model names are
 free text, so you can move to newer models without updating the plugin.
 
 ## Requirements
 
 - **Moodle 4.2 or later** (tested on Moodle 4.5)
 - **PHP 8.0 or later** with the `curl`, `zip`, `mbstring` and `dom` extensions
-- An **OpenAI API key** or an **Anthropic API key**
-- Outbound HTTPS from your Moodle server to `api.openai.com` and/or `api.anthropic.com`
+- An **OpenAI**, **Anthropic** or **Google Gemini API key**
+- Outbound HTTPS from your Moodle server to `api.openai.com`, `api.anthropic.com` and/or `generativelanguage.googleapis.com`
 
 ## Installation
 
@@ -131,6 +133,7 @@ Go to **Site administration → Plugins → Local plugins → CourseTitan → Se
 | Active provider | OpenAI | Which AI provider generates courses |
 | OpenAI API key / model | `gpt-5-mini` | Used when OpenAI is active |
 | Anthropic API key / Claude model | `claude-sonnet-5-5` | Used when Claude is active |
+| Google Gemini API key / model | `gemini-3.8-flash` | Used when Gemini is active |
 | Course category | Category 1 | Default category for new courses |
 | Make new courses visible | Off | Keep generated courses hidden until reviewed |
 | Max sections | 6 | Upper limit on course sections |
@@ -165,7 +168,7 @@ category.
 
 | Problem | Solution |
 |---------|----------|
-| "Moodle blocked the request" | Check **Site administration → General → Security → HTTP security** (cURL blocked hosts, allowed port 443) and server DNS |
+| "Moodle blocked the request" | Check **Site administration → General → Security → HTTP security** (cURL blocked hosts, allowed port 443), allow the selected provider hostname and check server DNS |
 | HTTP 401 | The API key is wrong or revoked |
 | HTTP 400 mentioning schema or response format | The model does not support structured outputs; choose a newer model |
 | "Output was cut off at the token limit" | Increase **Max output tokens** |
@@ -181,8 +184,8 @@ Yes. The plugin is free and open source under the GPL v3. You only pay your AI p
 It uses the OpenAI API, which serves the same GPT models behind ChatGPT. You need an API key
 from the OpenAI platform; a ChatGPT subscription is not an API key.
 
-**Can I use Claude instead of OpenAI?**
-Yes. Add an Anthropic API key and choose Anthropic Claude as the active provider.
+**Can I use Claude or Gemini instead of OpenAI?**
+Yes. Add the corresponding Anthropic or Google Gemini API key and select that provider.
 
 **Will students see AI-generated content straight away?**
 No. Generated courses are hidden by default. Teachers should review and edit every activity
@@ -206,7 +209,7 @@ Moodle 4.2 and later. It has been tested on Moodle 4.5.
 
 - More activity types: Lesson, Feedback and Choice
 - Optional AI-generated images
-- Additional providers (Google Gemini, Azure OpenAI, local models via an OpenAI-compatible API)
+- Additional providers (Azure OpenAI, local models via an OpenAI-compatible API)
 - Regenerate a single activity from the course page
 
 Ideas and feature requests are welcome in the issue tracker.

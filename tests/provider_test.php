@@ -18,17 +18,19 @@ namespace local_coursetitan;
 
 use local_coursetitan\provider\anthropic;
 use local_coursetitan\provider\factory;
+use local_coursetitan\provider\gemini;
 use local_coursetitan\provider\openai;
 use local_coursetitan\provider\provider_exception;
 
 /**
- * Tests for request building and response parsing of both providers.
+ * Tests for request building and response parsing of all supported providers.
  *
  * @package   local_coursetitan
  * @copyright 2026 JustAddWater <https://justaddwater.in>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers    \local_coursetitan\provider\openai
  * @covers    \local_coursetitan\provider\anthropic
+ * @covers    \local_coursetitan\provider\gemini
  * @covers    \local_coursetitan\provider\factory
  */
 final class provider_test extends \advanced_testcase {
@@ -85,6 +87,42 @@ final class provider_test extends \advanced_testcase {
     }
 
     /**
+     * Gemini request uses the generateContent API and structured JSON schema.
+     */
+    public function test_gemini_request_and_parse(): void {
+        $p = new gemini('key', 'gemini-3.8-flash', 60, 3000);
+        $schema = schema::ping();
+        $req = $p->build_request('system prompt', [
+            ['role' => 'user', 'content' => 'ping'],
+            ['role' => 'assistant', 'content' => '{"ok":true}'],
+        ], 'ping', $schema);
+
+        $this->assertSame('system prompt', $req['systemInstruction']['parts'][0]['text']);
+        $this->assertSame('user', $req['contents'][0]['role']);
+        $this->assertSame('model', $req['contents'][1]['role']);
+        $this->assertSame('application/json', $req['generationConfig']['responseMimeType']);
+        $this->assertSame(3000, $req['generationConfig']['maxOutputTokens']);
+        $this->assertSame(['type' => 'object', 'properties' => ['ok' => ['type' => 'boolean']],
+            'required' => ['ok']], $req['generationConfig']['responseSchema']);
+
+        $result = $p->parse_response([
+            'candidates' => [['content' => ['parts' => [['text' => '{"ok":true}']]], 'finishReason' => 'STOP']],
+            'usageMetadata' => ['promptTokenCount' => 12, 'candidatesTokenCount' => 4,
+                'thoughtsTokenCount' => 2, 'cachedContentTokenCount' => 3],
+        ]);
+        $this->assertSame(['ok' => true], $result['data']);
+        $this->assertSame(['in' => 12, 'out' => 6, 'cache' => 3], $result['usage']);
+
+        try {
+            $p->parse_response(['candidates' => [['content' => ['parts' => [['text' => '{"ok":']]],
+                'finishReason' => 'MAX_TOKENS']]]);
+            $this->fail('Expected truncation exception');
+        } catch (provider_exception $e) {
+            $this->assertSame('{"ok":', $e->rawoutput);
+        }
+    }
+
+    /**
      * Factory picks the configured provider and its own key/model.
      */
     public function test_factory(): void {
@@ -99,5 +137,14 @@ final class provider_test extends \advanced_testcase {
         $this->assertTrue(factory::create()->is_configured());
         $this->assertSame('claude-haiku-5-5', factory::create()->get_model());
         $this->assertInstanceOf(openai::class, factory::create('openai'));
+        $this->assertInstanceOf(gemini::class, factory::create('gemini'));
+        $this->assertSame('gemini-3.8-flash', factory::create('gemini')->get_model());
+
+        set_config('provider', 'gemini', 'local_coursetitan');
+        set_config('geminikey', 'gemini-test-key', 'local_coursetitan');
+        set_config('geminimodel', 'gemini-3.8-flash', 'local_coursetitan');
+        $this->assertInstanceOf(gemini::class, factory::create());
+        $this->assertTrue(factory::create()->is_configured());
+        $this->assertSame('gemini-3.8-flash', factory::create()->get_model());
     }
 }

@@ -108,11 +108,10 @@ class anthropic extends base {
         }
         $stop = $response['stop_reason'] ?? '';
         if ($stop === 'refusal') {
-            throw new provider_exception('The model refused the request.');
+            throw new provider_exception(\get_string('provider_refusal', 'local_coursetitan'));
         }
         if ($stop === 'max_tokens') {
-            throw new provider_exception('Output was cut off at the token limit. Increase "Max output tokens" '
-                . 'or use shorter source material.', 0, $text);
+            throw new provider_exception(\get_string('provider_output_truncated', 'local_coursetitan'), 0, $text);
         }
         $usage = $response['usage'] ?? [];
         return [

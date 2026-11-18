@@ -91,16 +91,15 @@ class openai extends base {
     public function parse_response(array $response): array {
         $choice = $response['choices'][0] ?? null;
         if (!$choice) {
-            throw new provider_exception('OpenAI response contained no choices.');
+            throw new provider_exception(\get_string('provider_no_choices', 'local_coursetitan'));
         }
         $message = $choice['message'] ?? [];
         if (!empty($message['refusal'])) {
-            throw new provider_exception('The model refused the request: ' . $message['refusal']);
+            throw new provider_exception(\get_string('provider_refusal_detail', 'local_coursetitan', $message['refusal']));
         }
         $content = (string) ($message['content'] ?? '');
         if (($choice['finish_reason'] ?? '') === 'length') {
-            throw new provider_exception('Output was cut off at the token limit. Increase "Max output tokens" '
-                . 'or use shorter source material.', 0, $content);
+            throw new provider_exception(\get_string('provider_output_truncated', 'local_coursetitan'), 0, $content);
         }
         $usage = $response['usage'] ?? [];
         return [

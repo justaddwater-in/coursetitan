@@ -46,15 +46,18 @@ class validator {
         $data['course']['shortname'] = self::text($data['course']['shortname'] ?? '');
         $data['course']['summary_html'] = trim((string) ($data['course']['summary_html'] ?? ''));
         if ($data['course']['fullname'] === '') {
-            $errors[] = 'course.fullname is empty.';
+            $errors[] = \get_string('validation_course_fullname_empty', 'local_coursetitan');
         }
 
         $sections = $data['sections'] ?? [];
         if (!is_array($sections) || count($sections) === 0) {
-            return array_merge($errors, ['sections must contain at least one section.']);
+            return array_merge($errors, [\get_string('validation_sections_required', 'local_coursetitan')]);
         }
         if (count($sections) > $maxsections) {
-            $errors[] = 'There are ' . count($sections) . " sections; the maximum is {$maxsections}. Merge related topics.";
+            $errors[] = \get_string('validation_sections_max', 'local_coursetitan', (object) [
+                'count' => count($sections),
+                'maximum' => $maxsections,
+            ]);
         }
 
         foreach ($sections as $si => &$section) {
@@ -62,15 +65,19 @@ class validator {
             $section['title'] = self::text($section['title'] ?? '');
             $section['summary_html'] = trim((string) ($section['summary_html'] ?? ''));
             if ($section['title'] === '') {
-                $errors[] = "{$label}.title is empty.";
+                $errors[] = \get_string('validation_section_title_empty', 'local_coursetitan', $label);
             }
             $modules = $section['modules'] ?? [];
             if (!is_array($modules) || count($modules) === 0) {
-                $errors[] = "{$label} has no modules; add at least one page.";
+                $errors[] = \get_string('validation_section_modules_empty', 'local_coursetitan', $label);
                 continue;
             }
             if (count($modules) > $maxmodules) {
-                $errors[] = "{$label} has " . count($modules) . " modules; the maximum is {$maxmodules}.";
+                $errors[] = \get_string('validation_section_modules_max', 'local_coursetitan', (object) [
+                    'label' => $label,
+                    'count' => count($modules),
+                    'maximum' => $maxmodules,
+                ]);
             }
             foreach ($modules as $mi => &$module) {
                 $mlabel = "{$label}.modules[{$mi}]";
@@ -78,13 +85,17 @@ class validator {
                 $module['title'] = self::text($module['title'] ?? '');
                 $module['brief'] = trim((string) ($module['brief'] ?? ''));
                 if (!in_array($module['type'], schema::MODULE_TYPES, true)) {
-                    $errors[] = "{$mlabel}.type '{$module['type']}' is not one of: " . implode(', ', schema::MODULE_TYPES) . '.';
+                    $errors[] = \get_string('validation_module_type_invalid', 'local_coursetitan', (object) [
+                        'label' => $mlabel,
+                        'type' => $module['type'],
+                        'types' => implode(', ', schema::MODULE_TYPES),
+                    ]);
                 }
                 if ($module['title'] === '') {
-                    $errors[] = "{$mlabel}.title is empty.";
+                    $errors[] = \get_string('validation_module_title_empty', 'local_coursetitan', $mlabel);
                 }
                 if ($module['brief'] === '') {
-                    $errors[] = "{$mlabel}.brief is empty.";
+                    $errors[] = \get_string('validation_module_brief_empty', 'local_coursetitan', $mlabel);
                 }
             }
             unset($module);
@@ -112,9 +123,9 @@ class validator {
                 return self::quiz($data, $minquestions);
             case 'forum':
                 $data['intro_html'] = trim((string) ($data['intro_html'] ?? ''));
-                return $data['intro_html'] === '' ? ['intro_html is empty.'] : [];
+                return $data['intro_html'] === '' ? [\get_string('validation_forum_intro_empty', 'local_coursetitan')] : [];
         }
-        return ["Unknown module type '{$type}'."];
+        return [\get_string('validation_unknown_module_type', 'local_coursetitan', $type)];
     }
 
     /**
@@ -128,8 +139,7 @@ class validator {
         $data['content_html'] = trim((string) ($data['content_html'] ?? ''));
         $visible = trim(html_entity_decode(strip_tags($data['content_html'])));
         if (\core_text::strlen($visible) < self::MIN_PAGE_TEXT) {
-            return ['content_html is too short (' . \core_text::strlen($visible) . ' characters of text); '
-                . 'write a complete lesson of at least several paragraphs.'];
+            return [\get_string('validation_page_too_short', 'local_coursetitan', \core_text::strlen($visible))];
         }
         return [];
     }
@@ -146,8 +156,10 @@ class validator {
         $data['intro'] = self::text($data['intro'] ?? '');
         $questions = $data['questions'] ?? [];
         if (!is_array($questions) || count($questions) < $minquestions) {
-            $errors[] = 'The quiz has ' . (is_array($questions) ? count($questions) : 0)
-                . " questions; at least {$minquestions} are required.";
+            $errors[] = \get_string('validation_quiz_min_questions', 'local_coursetitan', (object) [
+                'count' => is_array($questions) ? count($questions) : 0,
+                'minimum' => $minquestions,
+            ]);
             if (!is_array($questions)) {
                 return $errors;
             }
@@ -161,10 +173,14 @@ class validator {
             $q['general_feedback'] = trim((string) ($q['general_feedback'] ?? ''));
             $q['truefalse_answer'] = (bool) ($q['truefalse_answer'] ?? false);
             if (trim(strip_tags($q['text_html'])) === '') {
-                $errors[] = "{$label}.text_html is empty.";
+                $errors[] = \get_string('validation_question_text_empty', 'local_coursetitan', $label);
             }
             if (!in_array($q['type'], schema::QUESTION_TYPES, true)) {
-                $errors[] = "{$label}.type '{$q['type']}' is not one of: " . implode(', ', schema::QUESTION_TYPES) . '.';
+                $errors[] = \get_string('validation_question_type_invalid', 'local_coursetitan', (object) [
+                    'label' => $label,
+                    'type' => $q['type'],
+                    'types' => implode(', ', schema::QUESTION_TYPES),
+                ]);
                 continue;
             }
             if ($q['type'] !== 'multichoice') {
@@ -180,11 +196,17 @@ class validator {
                 $o['feedback'] = trim((string) ($o['feedback'] ?? ''));
                 $o['is_correct'] = (bool) ($o['is_correct'] ?? false);
                 if ($o['text'] === '') {
-                    $errors[] = "{$label}.options[{$oi}].text is empty.";
+                    $errors[] = \get_string('validation_option_text_empty', 'local_coursetitan', (object) [
+                        'label' => $label,
+                        'index' => $oi,
+                    ]);
                 }
                 $key = \core_text::strtolower($o['text']);
                 if (isset($seen[$key])) {
-                    $errors[] = "{$label} has duplicate option '{$o['text']}'.";
+                    $errors[] = \get_string('validation_duplicate_option', 'local_coursetitan', (object) [
+                        'label' => $label,
+                        'option' => $o['text'],
+                    ]);
                 }
                 $seen[$key] = true;
                 $correct += $o['is_correct'] ? 1 : 0;
@@ -192,10 +214,16 @@ class validator {
             unset($o);
             $q['options'] = $options;
             if (count($options) < 3 || count($options) > 6) {
-                $errors[] = "{$label} has " . count($options) . ' options; multichoice needs 3 to 5.';
+                $errors[] = \get_string('validation_multichoice_options_count', 'local_coursetitan', (object) [
+                    'label' => $label,
+                    'count' => count($options),
+                ]);
             }
             if ($correct !== 1) {
-                $errors[] = "{$label} has {$correct} correct options; exactly one must be correct.";
+                $errors[] = \get_string('validation_correct_option_count', 'local_coursetitan', (object) [
+                    'label' => $label,
+                    'count' => $correct,
+                ]);
             }
         }
         unset($q);

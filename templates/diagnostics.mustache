@@ -6,7 +6,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Moodle is distributed in the hope that it will be useful,
+    This file is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -17,48 +17,83 @@
 {{!
     @template local_coursetitan/diagnostics
 
-    Provider connectivity check.
+    Provider connectivity checks. Each provider has an independent test action.
 
     Context variables required for this template:
-    * rows - array of {label, model, active, configured, tested, ok, message, ms}
-    * actionurl - string
-    * sesskey - string
-
-    Example context (json):
-    {
-        "rows": [{"label": "OpenAI", "model": "gpt-5-mini", "active": true, "configured": true,
-                  "tested": true, "ok": true, "message": "Working", "ms": 812}],
-        "actionurl": "#", "sesskey": "abc"
-    }
+    * rows - provider configuration and latest test result
+    * actionurl - form action URL
+    * sesskey - Moodle session key
 }}
-<p>{{#str}} diag_intro, local_coursetitan {{/str}}</p>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>{{#str}} diag_provider, local_coursetitan {{/str}}</th>
-            <th>{{#str}} diag_model, local_coursetitan {{/str}}</th>
-            <th>{{#str}} diag_result, local_coursetitan {{/str}}</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{#rows}}
+<div class="mb-4">
+    <p class="mb-1">{{#str}} diag_intro, local_coursetitan {{/str}}</p>
+    <p class="text-muted small mb-0">{{#str}} diag_individual_hint, local_coursetitan {{/str}}</p>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
             <tr>
-                <td>{{label}} {{#active}}<span class="badge bg-primary badge-primary">{{#str}} diag_active, local_coursetitan {{/str}}</span>{{/active}}</td>
-                <td><code>{{model}}</code></td>
-                <td>
-                    {{^configured}}<span class="text-muted">{{#str}} diag_nokey, local_coursetitan {{/str}}</span>{{/configured}}
-                    {{#tested}}
-                        {{#ok}}<span class="badge bg-success badge-success">OK</span>{{/ok}}
-                        {{^ok}}<span class="badge bg-danger badge-danger">{{#str}} error {{/str}}</span>{{/ok}}
-                        {{message}} <span class="text-muted small">({{ms}} ms)</span>
-                    {{/tested}}
-                </td>
+                <th scope="col">{{#str}} diag_provider, local_coursetitan {{/str}}</th>
+                <th scope="col">{{#str}} diag_model, local_coursetitan {{/str}}</th>
+                <th scope="col">{{#str}} diag_configuration, local_coursetitan {{/str}}</th>
+                <th scope="col">{{#str}} diag_result, local_coursetitan {{/str}}</th>
+                <th scope="col" class="text-right">{{#str}} diag_action, local_coursetitan {{/str}}</th>
             </tr>
-        {{/rows}}
-    </tbody>
-</table>
-<form method="post" action="{{actionurl}}">
-    <input type="hidden" name="sesskey" value="{{sesskey}}">
-    <input type="hidden" name="run" value="1">
-    <button type="submit" class="btn btn-primary" data-action="run-diagnostics">{{#str}} diag_run, local_coursetitan {{/str}}</button>
-</form>
+        </thead>
+        <tbody>
+            {{#rows}}
+                <tr>
+                    <th scope="row">
+                        <span class="font-weight-bold">{{label}}</span>
+                        {{#active}}
+                            <span class="badge badge-primary ml-1">{{#str}} diag_active, local_coursetitan {{/str}}</span>
+                        {{/active}}
+                    </th>
+                    <td><code>{{model}}</code></td>
+                    <td>
+                        {{#configured}}
+                            <span class="badge badge-success">{{configurationlabel}}</span>
+                        {{/configured}}
+                        {{^configured}}
+                            <span class="badge badge-secondary">{{configurationlabel}}</span>
+                        {{/configured}}
+                    </td>
+                    <td>
+                        {{#tested}}
+                            {{#ok}}
+                                <span class="badge badge-success">{{#str}} diag_success, local_coursetitan {{/str}}</span>
+                                <span class="small text-muted ml-2">{{responsetime}}</span>
+                            {{/ok}}
+                            {{^ok}}
+                                <span class="badge badge-danger">{{#str}} diag_failed, local_coursetitan {{/str}}</span>
+                                <div class="small text-danger mt-1 text-break">{{message}}</div>
+                                <div class="small text-muted">{{responsetime}}</div>
+                            {{/ok}}
+                        {{/tested}}
+                        {{^tested}}
+                            <span class="text-muted">{{#str}} diag_not_tested, local_coursetitan {{/str}}</span>
+                        {{/tested}}
+                    </td>
+                    <td class="text-right">
+                        <form method="post" action="{{actionurl}}" class="d-inline" data-region="provider-test-form">
+                            <input type="hidden" name="sesskey" value="{{sesskey}}">
+                            <input type="hidden" name="run" value="1">
+                            <input type="hidden" name="provider" value="{{providerid}}">
+                            {{#configured}}
+                                <button type="submit" class="btn btn-primary btn-sm" data-action="provider-test"
+                                    aria-label="{{testlabel}}" data-testing-label="{{#str}} diag_testing, local_coursetitan {{/str}}">
+                                    {{#str}} diag_test, local_coursetitan {{/str}}
+                                </button>
+                            {{/configured}}
+                            {{^configured}}
+                                <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                    {{#str}} diag_add_key_to_test, local_coursetitan {{/str}}
+                                </button>
+                            {{/configured}}
+                        </form>
+                    </td>
+                </tr>
+            {{/rows}}
+        </tbody>
+    </table>
+</div>

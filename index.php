@@ -46,7 +46,30 @@ $PAGE->set_pagelayout('admin');
 $PAGE->set_title(get_string('generatecourse', 'local_coursetitan'));
 $PAGE->set_heading(get_string('generatecourse', 'local_coursetitan'));
 
-$provider = factory::create();
+// Only offer providers with a saved API key. Keep the site default selected when available.
+$activeprovider = (string) get_config('local_coursetitan', 'provider') ?: 'openai';
+$provideroptions = [];
+foreach (factory::get_choices() as $name => $label) {
+    $candidate = factory::create($name);
+    if (!$candidate->is_configured()) {
+        continue;
+    }
+    $provideroptions[] = [
+        'id' => $name,
+        'name' => $label,
+        'model' => $candidate->get_model(),
+        'selected' => $name === $activeprovider,
+    ];
+}
+
+// If the configured site default has no key, select the first available provider.
+if ($provideroptions && !array_filter($provideroptions, fn($option) => $option['selected'])) {
+    $provideroptions[0]['selected'] = true;
+}
+$hasprovider = !empty($provideroptions);
+$selectedoptions = array_values(array_filter($provideroptions, fn($option) => $option['selected']));
+$selectedprovider = $selectedoptions[0]['id'] ?? null;
+$provider = $selectedprovider ? factory::create($selectedprovider) : factory::create();
 $categoryoptions = [];
 foreach ($categories as $id => $name) {
     $categoryoptions[] = ['id' => $id, 'name' => $name, 'selected' => $id == $default];
@@ -59,12 +82,14 @@ $PAGE->requires->js_call_amd('local_coursetitan/generator', 'init', [[
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_coursetitan/generator', [
-    'configured' => $provider->is_configured(),
+    'configured' => $hasprovider,
     'issiteadmin' => is_siteadmin(),
     'settingsurl' => (new moodle_url('/admin/category.php', ['category' => 'local_coursetitan']))->out(false),
     'categories' => $categoryoptions,
     'accept' => implode(',', array_map(fn($e) => '.' . $e, source_extractor::EXTENSIONS)),
     'extensions' => implode(', ', source_extractor::EXTENSIONS),
+    'providers' => $provideroptions,
+    'defaultprovider' => $activeprovider,
     'model' => $provider->get_model(),
     'visible' => (bool) get_config('local_coursetitan', 'coursevisible'),
 ]);

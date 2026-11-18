@@ -25,7 +25,7 @@ use core_privacy\local\request\userlist;
 /**
  * Privacy metadata for CourseTitan.
  *
- * CourseTitan stores nothing of its own. Courses it creates are ordinary Moodle
+ * CourseTitan stores nothing of its own. Courses it creates are ordinary learning-platform
  * courses handled by core. It does send the teacher's source material to the
  * AI provider chosen by the administrator, which is declared here. The request
  * methods are therefore empty: there is nothing local to export or delete.
@@ -45,7 +45,7 @@ class provider implements
      * @return collection
      */
     public static function get_metadata(collection $collection): collection {
-        foreach (['openai', 'anthropic'] as $vendor) {
+        foreach (['openai', 'anthropic', 'gemini'] as $vendor) {
             $collection->add_external_location_link($vendor, [
                 'sourcematerial' => 'privacy:metadata:sourcematerial',
             ], 'privacy:metadata:' . $vendor);
