@@ -32,7 +32,34 @@ class source_extractor {
     const EXTENSIONS = ['txt', 'md', 'csv', 'html', 'htm', 'docx', 'pptx', 'pdf'];
 
     /** @var int Files larger than this are ignored (bytes). */
-    const MAX_FILE_BYTES = 52428800;
+    const MAX_FILE_BYTES = 10485760;
+
+    /** Maximum expanded XML size for a DOCX main document. */
+    const MAX_DOCX_XML_BYTES = 2097152;
+
+    /** Maximum expanded XML bytes across PPTX slides. */
+    const MAX_PPTX_XML_BYTES = 10485760;
+
+    /** Maximum slide count accepted in a PPTX. */
+    const MAX_PPTX_SLIDES = 100;
+
+    /** Maximum memory allowed for decompressed PDF streams. */
+    const MAX_PDF_DECODE_BYTES = 16777216;
+
+    /** Maximum number of entries accepted in Office ZIP containers. */
+    const MAX_ZIP_ENTRIES = 1000;
+
+    /** Maximum total uncompressed size reported by an Office ZIP container. */
+    const MAX_ZIP_EXPANDED_BYTES = 52428800; // 50 MB.
+
+    /** Maximum uncompressed size reported for any single ZIP entry. */
+    const MAX_ZIP_ENTRY_BYTES = 10485760; // 10 MB.
+
+    /** Maximum time spent inspecting ZIP metadata (seconds). */
+    const MAX_ZIP_INSPECTION_SECONDS = 2.0;
+
+    /** Maximum compression ratio for entries larger than 1 MB. */
+    const MAX_ZIP_COMPRESSION_RATIO = 1000;
 
     /** @var string WordprocessingML namespace. */
     const NS_WORD = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -118,9 +145,12 @@ class source_extractor {
      * @return string
      */
     private static function from_docx(string $path): string {
-        $xml = self::zip_entry($path, 'word/document.xml');
+        $xml = self::zip_entry($path, 'word/document.xml', self::MAX_DOCX_XML_BYTES);
         if ($xml === null) {
             return '';
+        }
+        if (strlen($xml) > self::MAX_DOCX_XML_BYTES) {
+            throw new \UnexpectedValueException('DOCX document XML exceeds the extraction limit.');
         }
         $dom = self::load_xml($xml);
         $xpath = new \DOMXPath($dom);
@@ -151,10 +181,23 @@ class source_extractor {
         if ($zip->open($path) !== true) {
             return '';
         }
+        self::validate_zip($zip);
         $slides = [];
+        $xmltotal = 0;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             if (preg_match('#^ppt/slides/slide(\d+)\.xml$#', $name, $m)) {
+                if (count($slides) >= self::MAX_PPTX_SLIDES) {
+                    $zip->close();
+                    throw new \UnexpectedValueException('PPTX contains too many slides to extract.');
+                }
+                $stat = $zip->statIndex($i);
+                $size = (int) ($stat['size'] ?? 0);
+                $xmltotal += $size;
+                if ($size <= 0 || $size > self::MAX_DOCX_XML_BYTES || $xmltotal > self::MAX_PPTX_XML_BYTES) {
+                    $zip->close();
+                    throw new \UnexpectedValueException('PPTX slide XML exceeds the extraction limit.');
+                }
                 $slides[(int) $m[1]] = $zip->getFromIndex($i);
             }
         }
@@ -193,8 +236,51 @@ class source_extractor {
         require_once(__DIR__ . '/../vendor/autoload.php');
         $config = new \Smalot\PdfParser\Config();
         $config->setRetainImageContent(false);
+        $config->setDecodeMemoryLimit(self::MAX_PDF_DECODE_BYTES);
         $parser = new \Smalot\PdfParser\Parser([], $config);
         return $parser->parseFile($path)->getText();
+    }
+
+    /**
+     * Validate ZIP metadata before reading any entry, bounding archive expansion and inspection work.
+     * No entries are extracted to disk. The metadata limits also bound the XML data passed to parsers.
+     *
+     * @param \ZipArchive $zip
+     * @return void
+     */
+    private static function validate_zip(\ZipArchive $zip): void {
+        if ($zip->numFiles > self::MAX_ZIP_ENTRIES) {
+            $zip->close();
+            throw new \UnexpectedValueException('Office archive contains too many entries.');
+        }
+        $started = microtime(true);
+        $expanded = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            if (microtime(true) - $started > self::MAX_ZIP_INSPECTION_SECONDS) {
+                $zip->close();
+                throw new \UnexpectedValueException('Office archive inspection exceeded the time limit.');
+            }
+            $stat = $zip->statIndex($i);
+            if (!$stat || !isset($stat['size'], $stat['comp_size']) || (int) $stat['size'] < 0 || (int) $stat['comp_size'] < 0) {
+                $zip->close();
+                throw new \UnexpectedValueException('Office archive contains invalid entry metadata.');
+            }
+            $size = (int) $stat['size'];
+            $compressed = (int) $stat['comp_size'];
+            if ($size > self::MAX_ZIP_ENTRY_BYTES) {
+                $zip->close();
+                throw new \UnexpectedValueException('Office archive entry exceeds the extraction limit.');
+            }
+            $expanded += $size;
+            if ($expanded > self::MAX_ZIP_EXPANDED_BYTES) {
+                $zip->close();
+                throw new \UnexpectedValueException('Office archive expanded size exceeds the extraction limit.');
+            }
+            if ($size > 1048576 && ($compressed === 0 || $size / $compressed > self::MAX_ZIP_COMPRESSION_RATIO)) {
+                $zip->close();
+                throw new \UnexpectedValueException('Office archive contains a suspicious compression ratio.');
+            }
+        }
     }
 
     /**
@@ -202,12 +288,19 @@ class source_extractor {
      *
      * @param string $path
      * @param string $entry
+     * @param int $maxbytes Maximum extracted bytes for this entry.
      * @return string|null
      */
-    private static function zip_entry(string $path, string $entry): ?string {
+    private static function zip_entry(string $path, string $entry, int $maxbytes): ?string {
         $zip = new \ZipArchive();
         if ($zip->open($path) !== true) {
             return null;
+        }
+        self::validate_zip($zip);
+        $stat = $zip->statName($entry);
+        if (!$stat || (int) ($stat['size'] ?? 0) <= 0 || (int) ($stat['size'] ?? 0) > $maxbytes) {
+            $zip->close();
+            throw new \UnexpectedValueException('Document XML entry exceeds the extraction limit.');
         }
         $data = $zip->getFromName($entry);
         $zip->close();
@@ -223,9 +316,12 @@ class source_extractor {
     private static function load_xml(string $xml): \DOMDocument {
         $dom = new \DOMDocument();
         $prev = libxml_use_internal_errors(true);
-        $dom->loadXML($xml, LIBXML_NONET | LIBXML_COMPACT);
+        $loaded = $dom->loadXML($xml, LIBXML_NONET | LIBXML_COMPACT);
         libxml_clear_errors();
         libxml_use_internal_errors($prev);
+        if (!$loaded) {
+            throw new \UnexpectedValueException('Invalid XML in uploaded document.');
+        }
         return $dom;
     }
 

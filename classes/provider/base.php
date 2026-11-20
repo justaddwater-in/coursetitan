@@ -256,7 +256,12 @@ abstract class base {
         }
         $data = json_decode($text, true);
         if (!is_array($data)) {
-            throw new provider_exception(\get_string('provider_invalid_json', 'local_coursetitan', json_last_error_msg()), 0, $text);
+            $message = get_string(
+                'provider_invalid_json',
+                'local_coursetitan',
+                json_last_error_msg()
+            );
+            throw new provider_exception($message, 0, $text);
         }
         return $data;
     }

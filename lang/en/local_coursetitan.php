@@ -179,3 +179,6 @@ $string['js_request_failed'] = 'The request could not be completed. Check your c
 
 $string['generation_unexpected_error'] = 'An unexpected error occurred while generating the course. Please try again. If the problem continues, contact your site administrator.';
 $string['diag_unexpected_error'] = 'An unexpected error occurred while testing this provider. Check the server logs for details.';
+
+$string['sourceuploadlimits'] = 'Upload no more than 10 files and 25 MB combined per generation request.';
+$string['sourcefilelimits'] = 'Each uploaded file must be non-empty and no larger than 10 MB.';

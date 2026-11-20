@@ -34,6 +34,12 @@ use local_coursetitan\source_extractor;
 
 /** Maximum plain-text input (bytes) sent to the AI. */
 const LOCAL_COURSETITAN_MAX_INPUT = 524288;
+/** Maximum uploaded files per request. */
+const LOCAL_COURSETITAN_MAX_FILES = 10;
+/** Maximum combined upload size (bytes), before extraction. */
+const LOCAL_COURSETITAN_MAX_UPLOAD_BYTES = 26214400;
+/** Maximum individual upload size (bytes). */
+const LOCAL_COURSETITAN_MAX_FILE_BYTES = 10485760;
 
 require_login(null, false);
 require_sesskey();
@@ -45,13 +51,26 @@ $catcontext = context_coursecat::instance($categoryid);
 require_capability('local/coursetitan:generate', $catcontext);
 require_capability('moodle/course:create', $catcontext);
 
+$stream = new event_stream();
+
 // Build the source material: typed text first, then each uploaded file under its own heading.
 $parts = $text !== '' ? [$text] : [];
 $files = $_FILES['sources'] ?? null;
 if ($files && is_array($files['tmp_name'])) {
+    $filecount = count($files['tmp_name']);
+    $totalsize = array_sum(array_map('intval', $files['size'] ?? []));
+    if ($filecount > LOCAL_COURSETITAN_MAX_FILES || $totalsize > LOCAL_COURSETITAN_MAX_UPLOAD_BYTES) {
+        $stream->error(get_string('sourceuploadlimits', 'local_coursetitan'));
+        die;
+    }
     foreach ($files['tmp_name'] as $i => $tmp) {
         if (($files['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($tmp)) {
             continue;
+        }
+        $filesize = (int) ($files['size'][$i] ?? 0);
+        if ($filesize <= 0 || $filesize > LOCAL_COURSETITAN_MAX_FILE_BYTES) {
+            $stream->error(get_string('sourcefilelimits', 'local_coursetitan'));
+            die;
         }
         $name = clean_param($files['name'][$i], PARAM_FILE);
         $content = source_extractor::extract($tmp, $name);
@@ -61,8 +80,6 @@ if ($files && is_array($files['tmp_name'])) {
     }
 }
 $source = implode("\n\n", $parts);
-
-$stream = new event_stream();
 if ($requestedprovider !== '') {
     if (!array_key_exists($requestedprovider, factory::get_choices())) {
         $stream->error(get_string('invalidprovider', 'local_coursetitan'));

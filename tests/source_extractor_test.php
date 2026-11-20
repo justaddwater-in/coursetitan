@@ -103,6 +103,27 @@ final class source_extractor_test extends \advanced_testcase {
         $this->assertSame("[Slide 2]\nTwo\n\n[Slide 10]\nTen", source_extractor::extract($path, 'deck.pptx'));
     }
 
+
+    public function test_rejects_zip_archives_with_too_many_entries(): void {
+        $entries = [];
+        for ($i = 0; $i <= source_extractor::MAX_ZIP_ENTRIES; $i++) {
+            $entries['word/entry' . $i . '.xml'] = '<x/>';
+        }
+        $path = $this->zip('many-entries.docx', $entries);
+        $this->assertSame('', source_extractor::extract($path, 'many-entries.docx'));
+        $this->assertDebuggingCalled();
+    }
+
+
+    public function test_rejects_zip_with_suspicious_expansion_ratio(): void {
+        // A highly compressible payload simulates a decompression-bomb entry.
+        $payload = '<w:document>' . str_repeat('A', 5 * 1024 * 1024) . '</w:document>';
+        $path = $this->zip('compressed-bomb.docx', ['word/document.xml' => $payload]);
+        $this->assertSame('', source_extractor::extract($path, 'compressed-bomb.docx'));
+        $this->assertDebuggingCalled();
+    }
+
+
     public function test_unsupported_and_corrupt_files(): void {
         $this->assertSame('', source_extractor::extract($this->file('x.exe', 'MZ'), 'x.exe'));
         $this->assertSame('', source_extractor::extract($this->file('bad.docx', 'not a zip'), 'bad.docx'));

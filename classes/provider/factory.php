@@ -55,8 +55,8 @@ class factory {
     public static function create(?string $name = null): base {
         $cfg = get_config('local_coursetitan');
         $name = $name ?? ($cfg->provider ?? 'openai');
-        $timeout = (int) ($cfg->timeout ?? 300) ?: 300;
-        $maxtokens = (int) ($cfg->maxtokens ?? 16000) ?: 16000;
+        $timeout = min(600, max(30, (int) ($cfg->timeout ?? 300) ?: 300));
+        $maxtokens = min(64000, max(1024, (int) ($cfg->maxtokens ?? 16000) ?: 16000));
 
         switch ($name) {
             case 'gemini':
